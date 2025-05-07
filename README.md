@@ -1,4 +1,3 @@
-# R2-Unidad-2-IOT
 # INSTRUMENTO DE RECUPERACIÓN 2 (R2)
 # Curso JavaScript Essentials 2 de Cisco NetAcad.
 Capturas 
