@@ -25,9 +25,6 @@ while True:
     print("Temperatura: {:.2f} °C".format(temperatura))
     sleep(1)
 
-
-
-
 # Diagrama de conexion:
 <img width="195" alt="Captura de pantalla 2025-05-06 155011" src="https://github.com/user-attachments/assets/d862c9d3-3ac3-4bf1-8930-80facfcbb69b" />
 
@@ -294,7 +291,6 @@ while True:
 
 # Video Demostrativo:
 
-
 # Ejercicio 3: Comunicación TCP/IP con Base de Datos:
 En lugar de solo enviar datos, estos deben almacenarse en una base de datos
 (SQLite, Firebase, PostgreSQL).
@@ -314,14 +310,6 @@ cuando un sensor detecte un evento.
 # Codigo:
 # Diagrama de conexion:
 # Video Demostrativo:
-
-
-
-
-
-
-
-
 
 # Autores 
 
