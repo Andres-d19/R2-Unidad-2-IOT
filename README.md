@@ -1,5 +1,12 @@
 # R2-Unidad-2-IOT
 # INSTRUMENTO DE RECUPERACIÓN 2 (R2)
+# Curso JavaScript Essentials 2 de Cisco NetAcad.
+Capturas 
+<img width="959" alt="netacat5" src="https://github.com/user-attachments/assets/80553424-4489-462e-8dbb-9a8eb4a77d8c" />
+<img width="954" alt="netacat1" src="https://github.com/user-attachments/assets/254697c8-3045-40b8-8d98-25be69a95e54" />
+<img width="959" alt="netacat2" src="https://github.com/user-attachments/assets/24087ddb-5086-4414-85ea-be6109a23249" />
+<img width="954" alt="netacat3" src="https://github.com/user-attachments/assets/103882f2-30da-4ee4-b321-e615bb62470a" />
+<img width="952" alt="netacat4" src="https://github.com/user-attachments/assets/160129cd-3da1-4507-ad83-00b3e181db13" />
 
 # Ejercicio 1: Comunicación Serial con Conversión de Datos
 En lugar de solo enviar datos, el ESP32 deberá convertir la señal analógica de
@@ -7,7 +14,6 @@ un sensor en datos legibles en la PC.
 1. Implementa una comunicación serial donde el ESP32 convierta la señal analógica de
 un sensor en datos de temperatura o humedad y los envíe a la PC.
 
-# Evidencias requeridas:
 # Codigo:
 ```python
 from machine import ADC, Pin
@@ -25,21 +31,26 @@ while True:
 
     print("Temperatura: {:.2f} °C".format(temperatura))
     sleep(1)
+```
 
 # Diagrama de conexion:
 <img width="195" alt="Captura de pantalla 2025-05-06 155011" src="https://github.com/user-attachments/assets/d862c9d3-3ac3-4bf1-8930-80facfcbb69b" />
 
 # Video Demostrativo:
 
+https://drive.google.com/file/d/1HalKD40sVr0boueGuoXZstCGtutvL9He/view?usp=sharing
+
+////////////////////////////////////////////////////////////////////////////
+
 # Ejercicio 2: Comunicación Bluetooth con Control desde un Chatbot
 En lugar de encender un LED, se usará un chatbot en Telegram o WhatsApp
 para controlar el Bluetooth.
 1. Configura un bot que, al recibir un mensaje en Telegram o WhatsApp, envíe
 comandos a un ESP32 para encender/apagar un LED o mover un servo.
-# Evidencias requeridas:
 # Codigo:
 
 # servidor.py 
+```python
 
 import asyncio
 import telebot
@@ -204,9 +215,12 @@ finally:
     loop.run_until_complete(disconnect_ble())
     
     input("Presiona Enter para salir...")
+```
 
 # esp32
 # Control de Servo por Bluetooth BLE para ESP32 en MicroPython
+```python
+
 import bluetooth
 from ble_simple_peripheral import BLESimplePeripheral
 import time
@@ -285,12 +299,16 @@ while True:
     
     # Esperar un poco antes de la siguiente iteración
     time.sleep(3)
-
+```
 
 # Diagrama de conexion:
 ![image](https://github.com/user-attachments/assets/b3899046-a898-4fcd-82e3-e4e09de723ca)
 
 # Video Demostrativo:
+
+https://drive.google.com/file/d/1RHtFUrnR_70dppRgao8QZZ1UtVCI0HhU/view?usp=sharing
+
+////////////////////////////////////////////////////////////////////////////
 
 # Ejercicio 3: Comunicación TCP/IP con Base de Datos:
 En lugar de solo enviar datos, estos deben almacenarse en una base de datos
@@ -298,25 +316,269 @@ En lugar de solo enviar datos, estos deben almacenarse en una base de datos
 1. Implementa una comunicación TCP/IP donde un ESP32 registre datos en una base
 de datos en la nube o local.
 
-# Evidencias requeridas:
 # Codigo:
+
+# Esp32
+```python
+from machine import ADC, Pin
+import network
+import socket
+import time
+
+# Conexión Wi-Fi
+ssid = 'INFINITUMF116_EXT'
+password = 'X4s9xzFrsx'
+
+sta = network.WLAN(network.STA_IF)
+sta.active(True)
+sta.connect(ssid, password)
+
+while not sta.isconnected():
+    print('Conectando...')
+    time.sleep(1)
+
+print('Conectado:', sta.ifconfig())
+
+# Sensor LM35 en GPIO34 (puedes usar otro pin ADC)
+sensor = ADC(Pin(34))  # Cambia a 32, 33, 35 si prefieres
+sensor.atten(ADC.ATTN_11DB)  # Para leer hasta 3.6V
+
+# Envío TCP
+while True:
+    try:
+        s = socket.socket()
+        s.connect(('192.168.1.201', 3000))  # IP del servidor
+        valor = sensor.read()  # 0 - 4095
+
+        # Convertir la lectura ADC (0-4095) a voltaje (0-3.3V)
+        voltaje = (valor / 4095) * 3.3
+
+        # Convertir voltaje a temperatura en Celsius (LM35: 1°C = 10mV)
+        temperatura = voltaje * 100
+
+        mensaje = f"temperatura={temperatura:.2f}"  # Formato: temperatura=25.45
+        s.send(mensaje.encode())
+        print("Enviado:", mensaje)
+        s.close()
+    except Exception as e:
+        print("Error al enviar:", e)
+    time.sleep(5)
+
+
+```
+# server.js
+```js
+const net = require('net');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('./datos.db');
+
+// Crear tabla si no existe
+db.run(`CREATE TABLE IF NOT EXISTS lecturas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  valor TEXT,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+// Servidor TCP
+const server = net.createServer((socket) => {
+    console.log('Cliente conectado');
+
+    socket.on('data', (data) => {
+        // Guardar solo el valor de temperatura
+        const recibido = data.toString().trim(); // Ejemplo de formato: "temperatura=25.45"
+        const valor = recibido.split('=')[1]; // Extrae el valor numérico
+        db.run('INSERT INTO lecturas (valor) VALUES (?)', [valor], (err) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            console.log('Dato guardado en SQLite');
+        });
+    });
+
+    socket.on('end', () => {
+        console.log('Cliente desconectado');
+    });
+});
+
+// Iniciar el servidor TCP
+server.listen(3000, () => {
+    console.log('Servidor TCP escuchando en puerto 3000');
+});
+
+```
+# web.js
+
+```js
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
+const app = express();
+const port = 3001;  // Cambié el puerto a 3001
+const path = require('path');  // Importar el módulo path
+
+// Crear o abrir la base de datos
+const db = new sqlite3.Database('./datos.db');
+// Configurar para servir archivos estáticos (como HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Endpoint para obtener las lecturas desde la base de datos
+app.get('/api/lecturas', (req, res) => {
+  db.all('SELECT * FROM lecturas ORDER BY timestamp DESC', [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows);  // Enviar los resultados como JSON
+  });
+});
+
+// Iniciar el servidor Express
+app.listen(port, () => {
+  console.log(`Servidor HTTP corriendo en http://localhost:${port}`);
+});
+
+
+```
+# Public/index.html
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lecturas del Sensor</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Lecturas del Sensor</h1>
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Temperatura (°C)</th>
+        <th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Realiza una solicitud a la API para obtener las lecturas
+    fetch('http://localhost:3001/api/lecturas')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.querySelector('#tabla tbody');
+        data.forEach(fila => {
+          // Si el valor recibido es una temperatura en grados Celsius, se puede usar directamente
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${fila.id}</td>
+            <td>${fila.valor} °C</td>  <!-- Mostrando la temperatura -->
+            <td>${fila.timestamp}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error('Error al obtener los datos:', err);
+      });
+  </script>
+</body>
+</html>
+
+
+```
+
+
 # Diagrama de conexion:
+![image](https://github.com/user-attachments/assets/26885679-c106-4110-90e8-0c2db3cc3c69)
+
 # Video Demostrativo:
 
+https://drive.google.com/file/d/1MJ8UJMRHiPm69dkWAtC7kAxAvEi7xygj/view?usp=sharing
+
+////////////////////////////////////////////////////////////////////////////
 # Ejercicio 4: Envío de Notificaciones con Discord Webhooks:
 Se reemplaza el correo por una integración con Discord.
 1. Configura un webhook de Discord para recibir notificaciones desde un ESP32
 cuando un sensor detecte un evento.
-# Evidencias requeridas:
+
 # Codigo:
+```Python
+import network
+import urequests
+import time
+import json
+from machine import Pin
+import dht  # Importamos sensor DHT
+
+# Configuración
+SSID = "INFINITUMF116_EXT"
+PASSWORD = "X4s9xzFrsx"
+WEBHOOK_URL = "https://discord.com/api/webhooks/1369521823653302422/gkEHkoV1pZBmu_2RYUSKhrNQh3Lc7hx_xl_LmSAycb48Xgsv05I1INmPiq626lJJI4BY"
+
+# Sensor de temperatura y humedad DHT22 en pin 15 (puedes cambiarlo)
+sensor_dht = dht.DHT22(Pin(14))
+
+def conectar_wifi():
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    if not wlan.isconnected():
+        print("Conectando a WiFi...")
+        wlan.connect(SSID, PASSWORD)
+        while not wlan.isconnected():
+            time.sleep(1)
+    print("Conectado a WiFi:", wlan.ifconfig())
+
+def enviar_discord(mensaje):
+    headers = {'Content-Type': 'application/json'}
+    cuerpo = json.dumps({"content": mensaje})
+    try:
+        respuesta = urequests.post(WEBHOOK_URL, data=cuerpo.encode('utf-8'), headers=headers)
+        print("Mensaje enviado. Código:", respuesta.status_code)
+        print("Respuesta:", respuesta.text)
+        respuesta.close()
+    except Exception as e:
+        print("Error al enviar:", e)
+
+# Programa principal
+conectar_wifi()
+
+while True:
+    try:
+        sensor_dht.measure()
+        temp = sensor_dht.temperature()
+        hum = sensor_dht.humidity()
+        mensaje = f"🌡️ Temp: {temp:.1f}°C | 💧 Humedad: {hum:.1f}%"
+        print("Enviando datos:", mensaje)
+        enviar_discord(mensaje)
+    except Exception as e:
+        print("Error leyendo sensor:", e)
+    time.sleep(60)  # Espera 60 segundos antes de enviar otra lectura
+```
 # Diagrama de conexion:
+<img width="209" alt="Captura de pantalla 2025-05-06 225552" src="https://github.com/user-attachments/assets/3dff6079-871f-47f1-b0a5-01e79c6f4c69" />
+
+
 # Video Demostrativo:
 
-# Autores 
+https://drive.google.com/file/d/1tfPAfppA5DrKD99I_d8A06hbACWEsEQ9/view?usp=sharing
 
-Juana Jaqueline Camarrillo Olaez
-<br>
+////////////////////////////////////////////////////////////////////////////
+
+# Autor 
 Jose Andres Gutierrez Vargas
-<br>
-Princes Rocio Guerrero Sánchez 
-<br>
+
+# Autoevaluación y Coevaluación
+Durante el desarrollo de los ejercicios propuestos a lo largo del proyecto, considero que realicé un trabajo comprometido y completo, cumpliendo con cada uno de los objetivos planteados tanto a nivel técnico como en la parte de responsabilidad personal y trabajo colaborativo. Me esforcé por entender el funcionamiento de cada componente involucrado, desde el uso de sensores y comunicación por Bluetooth, hasta la integración con bases de datos y plataformas modernas como Discord mediante webhooks.
+
+Pude aplicar de forma efectiva los conocimientos adquiridos en clase, y además me mantuve en constante búsqueda de información adicional para resolver los problemas que se presentaron. En particular, me resultó muy enriquecedor enfrentar retos como la configuración de bots, la interacción entre el ESP32 y servicios en la nube, y el uso de diferentes protocolos de comunicación. Cada desafío fue una oportunidad para fortalecer mis habilidades en programación, electrónica y comunicación de dispositivos IoT.
+
+En cuanto a mi participación, considero que fui puntual en la entrega de todas las evidencias requeridas y mostré responsabilidad en la organización del trabajo. Además, mantuve una actitud colaborativa con mis compañeros, ofreciendo ayuda cuando surgían dudas o problemas técnicos, y compartiendo experiencias y soluciones para mejorar el aprendizaje grupal. Esta interacción me permitió también aprender de otros enfoques y validar mis propias soluciones.
+
+Estoy satisfecho con el desempeño que tuve en este proyecto, ya que no solo logré cumplir con los requisitos establecidos, sino que también profundicé en el funcionamiento real de los sistemas conectados. Pienso que este trabajo refleja tanto mi compromiso como mi interés genuino por seguir desarrollándome en el área de tecnologías integradas y sistemas embebidos.
+
+
+
+
