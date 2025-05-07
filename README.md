@@ -9,36 +9,24 @@ un sensor en datos de temperatura o humedad y los envíe a la PC.
 
 # Evidencias requeridas:
 # Codigo:
+from machine import ADC, Pin
+from time import sleep
 
-// Definimos el pin al que está conectado el sensor
-const int sensorPin = 34;  // GPIO34 para el LM35 (pin analógico)
-float temperatura = 0.0;
+# Configuramos el pin 34 como entrada analógica
+sensor = ADC(Pin(34))
+sensor.atten(ADC.ATTN_11DB)   # Para medir hasta 3.3V
+sensor.width(ADC.WIDTH_10BIT)  # Rango de 0-1023
 
-void setup() {
-  // Inicializamos la comunicación serial
-  Serial.begin(115200);  // Inicia la comunicación serial con la PC a 115200 baudios
-  pinMode(sensorPin, INPUT);
-}
+while True:
+    valor = sensor.read()  # Leemos el valor ADC (0-1023)
+    voltaje = valor * (3.3 / 1023.0)  # Convertimos a voltaje
+    temperatura = voltaje * 100  # 10mV = 1°C para el LM35
 
-void loop() {
-  // Leemos el valor analógico del sensor
-  int valorSensor = analogRead(sensorPin);
-  
-  // Convertimos el valor analógico a un voltaje (valor entre 0 y 1023)
-  float voltaje = valorSensor * (3.3 / 1023.0);
-  
-  // Convertimos el voltaje en una temperatura en grados Celsius
-  // Para el LM35, 1V = 100°C, por lo que la fórmula es:
-  temperatura = voltaje * 100;
-  
-  // Enviamos el valor de la temperatura a la PC a través de la comunicación serial
-  Serial.print("Temperatura: ");
-  Serial.print(temperatura);
-  Serial.println(" °C");
-  
-  // Esperamos un segundo antes de leer nuevamente
-  delay(1000);
-}
+    print("Temperatura: {:.2f} °C".format(temperatura))
+    sleep(1)
+
+
+
 
 # Diagrama de conexion:
 <img width="195" alt="Captura de pantalla 2025-05-06 155011" src="https://github.com/user-attachments/assets/d862c9d3-3ac3-4bf1-8930-80facfcbb69b" />
