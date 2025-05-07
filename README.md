@@ -9,6 +9,7 @@ un sensor en datos de temperatura o humedad y los envíe a la PC.
 
 # Evidencias requeridas:
 # Codigo:
+```python
 from machine import ADC, Pin
 from time import sleep
 
